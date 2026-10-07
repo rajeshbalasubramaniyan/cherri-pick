@@ -78,13 +78,42 @@ export function ChildProvider({ children }) {
     })
   }
 
+  // Per-fact history, e.g. facts['7x8'] = { attempts, correct, streak }
+  const recordFact = (a, b, correct) => {
+    setProfile(prev => {
+      const facts = { ...(prev.progress.facts || {}) }
+      const key = `${a}x${b}`
+      const f = { attempts: 0, correct: 0, streak: 0, ...facts[key] }
+      f.attempts += 1
+      if (correct) { f.correct += 1; f.streak += 1 } else { f.streak = 0 }
+      facts[key] = f
+      return { ...prev, progress: { ...prev.progress, facts } }
+    })
+  }
+
+  // Times-table journey state, e.g. tables[7] = { stage, practiceCorrect, best }
+  const updateTable = (n, change) => {
+    setProfile(prev => {
+      const tables = { ...(prev.progress.tables || {}) }
+      tables[n] = change({ stage: 'practice', practiceCorrect: 0, best: 0, ...tables[n] })
+      return { ...prev, progress: { ...prev.progress, tables } }
+    })
+  }
+
+  const addXp = (amount) => {
+    setProfile(prev => {
+      const xp = prev.progress.xp + amount
+      return { ...prev, progress: { ...prev.progress, xp, level: Math.floor(xp / 100) + 1 } }
+    })
+  }
+
   const resetProfile = () => {
     setProfile(DEFAULT_PROFILE)
     localStorage.removeItem('cherripick_profile')
   }
 
   return (
-    <ChildContext.Provider value={{ profile, updateProfile, updateProgress, recordProblem, resetProfile }}>
+    <ChildContext.Provider value={{ profile, updateProfile, updateProgress, recordProblem, recordFact, updateTable, addXp, resetProfile }}>
       {children}
     </ChildContext.Provider>
   )

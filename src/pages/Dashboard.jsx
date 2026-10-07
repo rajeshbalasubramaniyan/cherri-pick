@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useChild } from '../context/ChildContext'
+import { TABLE_ORDER, tableState, tablesCompleted } from '../data/tables'
 
 const AVATAR_EMOJI = {
   fox: '🦊', panda: '🐼', unicorn: '🦄', robot: '🤖', cat: '🐱',
@@ -24,7 +25,11 @@ const BADGES = [
   { id: 'allrounder', name: 'All-Rounder', emoji: '🌈', desc: 'Tried all 6 methods', check: p => Object.keys(p.methodsUsed).length >= 6 },
   { id: 'streak3', name: 'On Fire', emoji: '🔥', desc: '3-day streak', check: p => p.streak >= 3 },
   { id: 'fifty', name: 'Math Wizard', emoji: '🧙', desc: 'Solved 50 problems', check: p => p.problemsSolved >= 50 },
-  { id: 'hundred', name: 'Cherry Master', emoji: '🍒', desc: 'Solved 100 problems', check: p => p.problemsSolved >= 100 },
+  { id: 'hundred', name: 'Century Club', emoji: '💯', desc: 'Solved 100 problems', check: p => p.problemsSolved >= 100 },
+  { id: 'table1', name: 'Table Master', emoji: '🏆', desc: 'Mastered your first times table', check: p => tablesCompleted(p.tables) >= 1 },
+  { id: 'table3', name: 'Triple Threat', emoji: '🎯', desc: 'Mastered 3 times tables', check: p => tablesCompleted(p.tables) >= 3 },
+  { id: 'table6', name: 'Halfway Hero', emoji: '⭐', desc: 'Mastered 6 times tables', check: p => tablesCompleted(p.tables) >= 6 },
+  { id: 'tableall', name: 'CHERRI Master', emoji: '🍒', desc: 'Mastered all 11 times tables', check: p => tablesCompleted(p.tables) >= 11 },
 ]
 
 export default function Dashboard() {
@@ -162,6 +167,31 @@ export default function Dashboard() {
           </div>
         </motion.div>
 
+        {/* Times table journey */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.9 }}
+          className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-display font-bold text-gray-900">Times Table Journey</h3>
+            <span className="font-display font-bold text-cherry text-sm">{tablesCompleted(progress.tables)}/{TABLE_ORDER.length} mastered</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {TABLE_ORDER.map(n => {
+              const st = tableState(progress.tables, n).stage
+              return (
+                <button key={n} onClick={() => navigate('/tables')}
+                  className={`w-11 h-11 rounded-xl font-display font-bold text-sm ${st === 'completed' ? 'bg-green-400 text-white' : st === 'mastery' ? 'bg-amber-300 text-white' : 'bg-gray-100 text-gray-500'}`}
+                  title={st === 'completed' ? 'Mastered' : st === 'mastery' ? 'Ready for the check' : 'Practising'}>
+                  {n}×
+                </button>
+              )
+            })}
+          </div>
+        </motion.div>
+
         {/* CTA */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -172,7 +202,7 @@ export default function Dashboard() {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => navigate('/learn')}
+            onClick={() => navigate('/tables')}
             className="bg-cherry text-white font-display font-bold text-lg px-10 py-4 rounded-full shadow-lg shadow-cherry/30 hover:bg-cherry-600 transition-colors"
           >
             Keep Learning! 🍒

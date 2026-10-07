@@ -1,8 +1,13 @@
-import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect, useRef } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useChild } from '../context/ChildContext'
-import { generateProblem, getEncouragement } from '../data/problems'
+import { generateProblem, generateProblemFor, getEncouragement } from '../data/problems'
+import {
+  TABLE_ORDER, MULTIPLIERS, PRACTICE_TO_UNLOCK_MASTERY, MASTERY_PASS_SCORE, MASTERY_TOTAL_QUESTIONS, TABLE_TIPS,
+  tableState, isUnlocked, masteryQueue,
+} from '../data/tables'
+import { XP_MASTERY_PASS } from '../config/constants'
 import VisualGrid from '../components/methods/VisualGrid'
 import JapaneseLine from '../components/methods/JapaneseLine'
 import StoryMode from '../components/methods/StoryMode'
@@ -21,7 +26,10 @@ const METHODS = [
 
 export default function Learn() {
   const navigate = useNavigate()
-  const { profile, recordProblem } = useChild()
+  const [params] = useSearchParams()
+  const { profile, recordProblem, recordFact, updateTable, addXp } = useChild()
+  const table = parseInt(params.get('table')) || null
+  const isCheck = !!table && params.get('check') === '1'
   const [problem, setProblem] = useState(null)
   const [selectedMethod, setSelectedMethod] = useState(null)
   const [userAnswer, setUserAnswer] = useState('')
@@ -29,22 +37,65 @@ export default function Learn() {
   const [showMethodPicker, setShowMethodPicker] = useState(true)
   const [problemCount, setProblemCount] = useState(0)
   const [sessionCorrect, setSessionCorrect] = useState(0)
+  // Mastery check state
+  const queue = useRef(masteryQueue())
+  const [checkIndex, setCheckIndex] = useState(0)
+  const [checkScore, setCheckScore] = useState(0)
+  const [firstTry, setFirstTry] = useState(true)
+  const [checkResult, setCheckResult] = useState(null)
+  const lastB = useRef(null)
+
+  const tState = table ? tableState(profile.progress.tables, table) : null
 
   useEffect(() => {
     if (!profile.onboardingComplete) {
       navigate('/onboarding')
       return
     }
-    newProblem()
-  }, [])
+    if (table && (!TABLE_ORDER.includes(table) || !isUnlocked(profile.progress.tables, table))) {
+      navigate('/tables')
+      return
+    }
+    // Same page serves practice and the check, so reset check state on every mode change.
+    queue.current = masteryQueue()
+    setCheckIndex(0)
+    setCheckScore(0)
+    setCheckResult(null)
+    newProblem(0)
+  }, [table, isCheck])
 
-  const newProblem = () => {
-    const p = generateProblem(profile.age, profile.interests)
+  const newProblem = (index = checkIndex) => {
+    let p
+    if (isCheck) {
+      p = generateProblemFor(table, queue.current[index], profile.interests)
+    } else if (table) {
+      let b
+      do { b = MULTIPLIERS[Math.floor(Math.random() * MULTIPLIERS.length)] } while (b === lastB.current)
+      lastB.current = b
+      p = generateProblemFor(table, b, profile.interests)
+    } else {
+      p = generateProblem(profile.age, profile.interests)
+    }
     setProblem(p)
     setSelectedMethod(null)
     setUserAnswer('')
     setFeedback(null)
+    setFirstTry(true)
     setShowMethodPicker(true)
+  }
+
+  const nextProblem = () => {
+    if (!isCheck) { newProblem(); return }
+    const next = checkIndex + 1
+    if (next >= MASTERY_TOTAL_QUESTIONS) {
+      const passed = checkScore >= MASTERY_PASS_SCORE
+      updateTable(table, s => ({ ...s, best: Math.max(s.best, checkScore), stage: passed ? 'completed' : s.stage }))
+      if (passed && tState.stage !== 'completed') addXp(XP_MASTERY_PASS)
+      setCheckResult({ score: checkScore, passed })
+      return
+    }
+    setCheckIndex(next)
+    newProblem(next)
   }
 
   const selectMethod = (method) => {
@@ -59,19 +110,30 @@ export default function Learn() {
       correct,
       message: getEncouragement(correct ? 'correct' : 'tryAgain'),
     })
+    recordProblem(selectedMethod, correct)
+    // Facts are tracked both ways round: 3 × 7 and 7 × 3 are the same fact.
+    recordFact(problem.a, problem.b, correct)
+    if (problem.a !== problem.b) recordFact(problem.b, problem.a, correct)
     if (correct) {
-      recordProblem(selectedMethod, true)
       setProblemCount(prev => prev + 1)
       setSessionCorrect(prev => prev + 1)
+      if (isCheck && firstTry) setCheckScore(s => s + 1)
+      if (table && !isCheck) {
+        updateTable(table, s => {
+          const practiceCorrect = Math.min(PRACTICE_TO_UNLOCK_MASTERY, s.practiceCorrect + 1)
+          const stage = s.stage === 'completed' ? 'completed' : practiceCorrect >= PRACTICE_TO_UNLOCK_MASTERY ? 'mastery' : 'practice'
+          return { ...s, practiceCorrect, stage }
+        })
+      }
     } else {
-      recordProblem(selectedMethod, false)
+      setFirstTry(false)
     }
   }
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
       if (feedback?.correct) {
-        newProblem()
+        nextProblem()
       } else {
         checkAnswer()
       }
@@ -79,6 +141,36 @@ export default function Learn() {
   }
 
   if (!problem) return null
+
+  if (checkResult) {
+    return (
+      <main className="max-w-md mx-auto px-4 py-12 text-center">
+        <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+          className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
+          <div className="text-6xl mb-3">{checkResult.passed ? '🏆' : '💪'}</div>
+          <h2 className="font-display text-3xl font-bold text-gray-900 mb-1">
+            {checkResult.passed ? `You mastered the ${table}s!` : 'So close!'}
+          </h2>
+          <p className="font-display text-5xl font-bold text-cherry my-4">{checkResult.score}/{MASTERY_TOTAL_QUESTIONS}</p>
+          <p className="text-gray-500 font-body mb-6">
+            {checkResult.passed
+              ? `+${XP_MASTERY_PASS} XP. The next table is unlocked!`
+              : `You need ${MASTERY_PASS_SCORE} right first time. Practise a little more and try again. Every try makes your brain stronger.`}
+          </p>
+          <div className="flex flex-col gap-3">
+            <button onClick={() => navigate('/tables')} className="bg-cherry text-white font-display font-bold py-3 rounded-full shadow-lg shadow-cherry/30">
+              Back to my journey
+            </button>
+            {!checkResult.passed && (
+              <button onClick={() => navigate(`/learn?table=${table}`)} className="font-display font-bold text-cherry-600">
+                Practise the {table}s
+              </button>
+            )}
+          </div>
+        </motion.div>
+      </main>
+    )
+  }
 
   const MethodComponent = selectedMethod ? METHODS.find(m => m.id === selectedMethod)?.component : null
   const avatarEmoji = { fox: '🦊', panda: '🐼', unicorn: '🦄', robot: '🤖', cat: '🐱', dog: '🐶', owl: '🦉', dragon: '🐉', bunny: '🐰', bear: '🐻' }
@@ -91,6 +183,28 @@ export default function Learn() {
         <span className="text-gray-300">|</span>
         <span className="text-gray-500">⭐ {profile.progress.xp} XP</span>
       </div>
+
+      {table && (
+        <div className="bg-white border-b border-gray-100 py-2.5 px-4 text-center">
+          <button onClick={() => navigate('/tables')} className="text-xs text-gray-400 hover:text-cherry font-body mr-2">← Journey</button>
+          {isCheck ? (
+            <span className="font-display font-bold text-gray-700 text-sm">
+              ⭐ {table}× mastery check · Question {checkIndex + 1}/{MASTERY_TOTAL_QUESTIONS} · Score {checkScore}
+            </span>
+          ) : (
+            <span className="font-display font-bold text-gray-700 text-sm">
+              {table}× practice · {tState.practiceCorrect}/{PRACTICE_TO_UNLOCK_MASTERY} {tState.stage === 'completed' ? '· mastered 🏆' : ''}
+            </span>
+          )}
+          {!isCheck && <p className="text-[11px] text-gray-400 font-body mt-0.5">💡 {TABLE_TIPS[table]}</p>}
+          {!isCheck && tState.stage === 'mastery' && (
+            <button onClick={() => navigate(`/learn?table=${table}&check=1`)}
+              className="mt-2 bg-cherry text-white font-display font-bold text-sm px-5 py-1.5 rounded-full shadow-md shadow-cherry/30">
+              You're ready! Take the mastery check ⭐
+            </button>
+          )}
+        </div>
+      )}
 
       <main className="flex-1 flex flex-col items-center px-4 py-8 max-w-2xl mx-auto w-full">
         {/* Avatar greeting */}
@@ -251,10 +365,10 @@ export default function Learn() {
                       animate={{ scale: 1 }}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      onClick={newProblem}
+                      onClick={nextProblem}
                       className="bg-cherry text-white font-display font-bold text-lg px-8 py-3 rounded-full shadow-lg shadow-cherry/30 hover:bg-cherry-600"
                     >
-                      Next Problem →
+                      {isCheck && checkIndex + 1 >= MASTERY_TOTAL_QUESTIONS ? 'See my score →' : 'Next Problem →'}
                     </motion.button>
                   )}
                 </div>

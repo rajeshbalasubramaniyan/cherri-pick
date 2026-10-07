@@ -6,6 +6,7 @@ import Landing from './pages/Landing'
 import Onboarding from './pages/Onboarding'
 import Learn from './pages/Learn'
 import Dashboard from './pages/Dashboard'
+import Tables from './pages/Tables'
 
 function AppContent() {
   const location = useLocation()
@@ -27,6 +28,7 @@ function AppContent() {
           <Route path="/" element={<Landing />} />
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/learn" element={<Learn />} />
+          <Route path="/tables" element={<Tables />} />
           <Route path="/dashboard" element={<Dashboard />} />
         </Routes>
       </div>

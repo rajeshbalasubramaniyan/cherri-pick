@@ -11,7 +11,7 @@ export default function Landing() {
 
   const handleStart = () => {
     if (profile.onboardingComplete) {
-      navigate('/learn')
+      navigate('/tables')
     } else {
       navigate('/onboarding')
     }

@@ -97,7 +97,7 @@ export default function Onboarding() {
         learningStyle,
         onboardingComplete: true,
       })
-      navigate('/learn')
+      navigate('/tables')
     }
   }
 

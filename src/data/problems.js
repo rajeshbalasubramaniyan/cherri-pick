@@ -36,8 +36,11 @@ function pickRandom(arr) {
 export function generateProblem(age, interests = []) {
   const level = getAgeLevel(age)
   const range = DIFFICULTY_RANGES[level]
-  const a = randomBetween(range.min, range.max)
-  const b = randomBetween(range.min, range.max)
+  return generateProblemFor(randomBetween(range.min, range.max), randomBetween(range.min, range.max), interests)
+}
+
+// A themed problem for one specific fact (used by the times-table journey).
+export function generateProblemFor(a, b, interests = []) {
   const answer = a * b
 
   const interest = interests.length > 0 ? pickRandom(interests) : 'food'

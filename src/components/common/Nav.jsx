@@ -23,7 +23,8 @@ export default function Nav() {
         {profile.onboardingComplete && (
           <>
             <button onClick={() => navigate('/')} className={`transition-colors ${location.pathname === '/' ? 'text-cherry' : 'text-gray-500 hover:text-cherry'}`}>Home</button>
-            <button onClick={() => navigate('/learn')} className={`transition-colors ${location.pathname === '/learn' ? 'text-cherry' : 'text-gray-500 hover:text-cherry'}`}>Learn</button>
+            <button onClick={() => navigate('/tables')} className={`transition-colors ${location.pathname === '/tables' ? 'text-cherry' : 'text-gray-500 hover:text-cherry'}`}>Tables</button>
+            <button onClick={() => navigate('/learn')} className={`transition-colors ${location.pathname === '/learn' ? 'text-cherry' : 'text-gray-500 hover:text-cherry'}`}>Mix It Up</button>
             <button onClick={() => navigate('/dashboard')} className={`transition-colors ${location.pathname === '/dashboard' ? 'text-cherry' : 'text-gray-500 hover:text-cherry'}`}>Progress</button>
           </>
         )}
@@ -62,7 +63,8 @@ export default function Nav() {
               {profile.onboardingComplete ? (
                 <>
                   <button onClick={() => { navigate('/'); setOpen(false) }} className="px-6 py-3 text-left text-gray-700 hover:text-cherry hover:bg-cherry-50 font-body font-semibold text-sm">Home</button>
-                  <button onClick={() => { navigate('/learn'); setOpen(false) }} className="px-6 py-3 text-left text-gray-700 hover:text-cherry hover:bg-cherry-50 font-body font-semibold text-sm">Learn</button>
+                  <button onClick={() => { navigate('/tables'); setOpen(false) }} className="px-6 py-3 text-left text-gray-700 hover:text-cherry hover:bg-cherry-50 font-body font-semibold text-sm">Times Tables</button>
+                  <button onClick={() => { navigate('/learn'); setOpen(false) }} className="px-6 py-3 text-left text-gray-700 hover:text-cherry hover:bg-cherry-50 font-body font-semibold text-sm">Mix It Up</button>
                   <button onClick={() => { navigate('/dashboard'); setOpen(false) }} className="px-6 py-3 text-left text-gray-700 hover:text-cherry hover:bg-cherry-50 font-body font-semibold text-sm">My Progress</button>
                 </>
               ) : (
