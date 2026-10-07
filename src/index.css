@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: 'Handy Casual';
+  src: url('/fonts/HandyCasualRegular.otf') format('opentype'),
+       url('/fonts/HandyCasualRegular.ttf') format('truetype');
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme {
+  --color-cherry: #FF0000;
+  --color-cherry-light: #FEE2E2;
+  --color-cherry-dark: #991B1B;
+  --color-cherry-50: #FFF5F5;
+  --color-cherry-100: #FEE2E2;
+  --color-cherry-200: #FECACA;
+  --color-cherry-500: #FF0000;
+  --color-cherry-600: #E60000;
+  --color-cherry-700: #991B1B;
+  --color-warm: #FFFBEB;
+  --color-warm-100: #FEF3C7;
+  --color-surface: #FFFFFF;
+  --color-surface-alt: #F9FAFB;
+  --font-display: 'Handy Casual', 'Fredoka', sans-serif;
+  --font-body: 'Poppins', 'Nunito', sans-serif;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+  body {
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background: #FFFBF7;
+    color: #1F2937;
+  }
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+  }
+}
